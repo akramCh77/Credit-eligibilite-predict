@@ -31,11 +31,10 @@ Cette application web permet de prédire l'éligibilité d'une personne à un cr
    cd credit-eligibility-prediction
    ```
 
-2. Créer un environnement virtuel et l'activer :
+2. Activer l'environnement virtuel :
    ```sh
-   python -m venv venv
-   source venv/bin/activate  # Sur macOS/Linux
-   venv\Scripts\activate  # Sur Windows
+   source .venv/bin/activate  # Sur macOS/Linux
+   .venv\Scripts\activate  # Sur Windows
    ```
 
 3. Installer les dépendances :
