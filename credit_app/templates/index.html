@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prédiction de Salaire | Analyse ML</title>
+  <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,600,700' rel='stylesheet' type='text/css'>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Open Sans', sans-serif;
+    }
+    
+    body {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 800px;
+      padding: 40px;
+    }
+    
+    h1 {
+      color: #2c3e50;
+      text-align: center;
+      margin-bottom: 30px;
+      font-weight: 700;
+      position: relative;
+    }
+    
+    h1:after {
+      content: '';
+      display: block;
+      width: 60px;
+      height: 4px;
+      background: #3498db;
+      margin: 15px auto 0;
+      border-radius: 2px;
+    }
+    
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #555;
+    }
+    
+    select, input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      transition: all 0.3s;
+      font-size: 14px;
+    }
+    
+    select:focus, input:focus {
+      border-color: #3498db;
+      box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+      outline: none;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 15px;
+      margin-top: 10px;
+    }
+    
+    button {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 14px 20px;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      flex: 1;
+    }
+    
+    button:hover {
+      background: #2980b9;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    button.reset-btn {
+      background: #e74c3c;
+    }
+    
+    button.reset-btn:hover {
+      background: #c0392b;
+    }
+    
+    .result {
+      margin-top: 30px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      text-align: center;
+      display: none;
+    }
+    
+    .result.show {
+      display: block;
+      animation: fadeIn 0.5s;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .hint {
+      font-size: 12px;
+      color: #7f8c8d;
+      margin-top: 4px;
+    }
+    
+    .flash-message {
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 6px;
+      text-align: center;
+    }
+    
+    .flash-message.success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .flash-message.warning {
+      background-color: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeeba;
+    }
+    
+    .flash-message.danger {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Prédiction d'éligibilité de crédit bancaire</h1>
+    
+    {% if prediction_text %}
+    <div class="flash-message success">
+      {{ prediction_text }}
+    </div>
+    {% endif %}
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash-message {{ category }}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    
+    <form action="{{ url_for('predict')}}" method="post" id="prediction-form">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="Gender">Genre</label>
+          <select id="Gender" name="Gender" required>
+            <option value="">Sélectionnez</option>
+            <option value="Male" {% if request.form.Gender == 'Male' %}selected{% endif %}>Homme</option>
+            <option value="Female" {% if request.form.Gender == 'Female' %}selected{% endif %}>Femme</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="Married">Statut marital</label>
+          <select id="Married" name="Married" required>
+            <option value="">Sélectionnez</option>
+            <option value="Yes" {% if request.form.Married == 'Yes' %}selected{% endif %}>Marié(e)</option>
+            <option value="No" {% if request.form.Married == 'No' %}selected{% endif %}>Célibataire</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="Dependents">Personnes à charge</label>
+          <select id="Dependents" name="Dependents" required>
+            <option value="">Sélectionnez</option>
+            <option value="0" {% if request.form.Dependents == '0' %}selected{% endif %}>0</option>
+            <option value="1" {% if request.form.Dependents == '1' %}selected{% endif %}>1</option>
+            <option value="2" {% if request.form.Dependents == '2' %}selected{% endif %}>2</option>
+            <option value="3+" {% if request.form.Dependents == '3+' %}selected{% endif %}>3 ou plus</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="Education">Niveau d'éducation</label>
+          <select id="Education" name="Education" required>
+            <option value="">Sélectionnez</option>
+            <option value="Graduate" {% if request.form.Education == 'Graduate' %}selected{% endif %}>Diplômé</option>
+            <option value="Not Graduate" {% if request.form.Education == 'Not Graduate' %}selected{% endif %}>Non diplômé</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="Self_Employed">Travailleur indépendant</label>
+          <select id="Self_Employed" name="Self_Employed" required>
+            <option value="">Sélectionnez</option>
+            <option value="Yes" {% if request.form.Self_Employed == 'Yes' %}selected{% endif %}>Oui</option>
+            <option value="No" {% if request.form.Self_Employed == 'No' %}selected{% endif %}>Non</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="Property_Area">Zone de propriété</label>
+          <select id="Property_Area" name="Property_Area" required>
+            <option value="">Sélectionnez</option>
+            <option value="Urban" {% if request.form.Property_Area == 'Urban' %}selected{% endif %}>Urbaine</option>
+            <option value="Semiurban" {% if request.form.Property_Area == 'Semiurban' %}selected{% endif %}>Semi-urbaine</option>
+            <option value="Rural" {% if request.form.Property_Area == 'Rural' %}selected{% endif %}>Rurale</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="ApplicantIncome">Revenu du demandeur</label>
+          <input type="number" id="ApplicantIncome" name="ApplicantIncome" required min="0" value="{{ request.form.ApplicantIncome }}">
+          <div class="hint">Revenu annuel en euros</div>
+        </div>
+        
+        <div class="form-group">
+          <label for="CoapplicantIncome">Revenu du co-demandeur</label>
+          <input type="number" id="CoapplicantIncome" name="CoapplicantIncome" required min="0" value="{{ request.form.CoapplicantIncome }}">
+          <div class="hint">Revenu annuel en euros</div>
+        </div>
+        
+        <div class="form-group">
+          <label for="LoanAmount">Montant du prêt</label>
+          <input type="number" id="LoanAmount" name="LoanAmount" required min="0" value="{{ request.form.LoanAmount }}">
+          <div class="hint">Montant en milliers d'euros</div>
+        </div>
+        
+        <div class="form-group">
+          <label for="Loan_Amount_Term">Durée du prêt</label>
+          <input type="number" id="Loan_Amount_Term" name="Loan_Amount_Term" required min="0" value="{{ request.form.Loan_Amount_Term }}">
+          <div class="hint">Durée en mois</div>
+        </div>
+        
+        <div class="form-group">
+          <label for="Credit_History">Historique de crédit</label>
+          <select id="Credit_History" name="Credit_History" required>
+            <option value="">Sélectionnez</option>
+            <option value="1" {% if request.form.Credit_History == '1' %}selected{% endif %}>Satisfaisant</option>
+            <option value="0" {% if request.form.Credit_History == '0' %}selected{% endif %}>Non satisfaisant</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="button-group">
+        <button type="submit" id="predict-button">
+          Analyser et Prédire
+        </button>
+        <button type="button" id="reset-button" class="reset-btn">
+          Actualiser
+        </button>
+      </div>
+    </form>
+    
+    {% if timestamp %}
+    <div class="result show" id="result">
+      <p><strong>Dernière prédiction :</strong> {{ timestamp }}</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <script>
+    $(document).ready(function() {
+      // Animation lors de la soumission
+      $("#prediction-form").on("submit", function() {
+        $("#predict-button").text("Analyse en cours...");
+        return true;
+      });
+      
+      // Validation des champs numériques
+      $("input[type=number]").on("input", function() {
+        if ($(this).val() < 0) {
+          $(this).val(0);
+        }
+      });
+      
+      // Bouton Actualiser pour vider le formulaire
+      $("#reset-button").on("click", function() {
+        // Réinitialiser les champs de sélection
+        $("select").val("");
+        
+        // Réinitialiser les champs numériques
+        $("input[type=number]").val("");
+        
+        // Animation du bouton
+        $(this).text("Formulaire réinitialisé!");
+        setTimeout(function() {
+          $("#reset-button").text("Actualiser");
+        }, 1500);
+        
+        // Masquer les résultats et messages
+        $(".result").removeClass("show");
+        $(".flash-message").slideUp();
+      });
+    });
+  </script>
+</body>
+</html>
