@@ -83,11 +83,6 @@ curl -X POST http://127.0.0.1:5000/predict_api -H "Content-Type: application/jso
 }
 ```
 
-## Déploiement sur un serveur
-1. Configurer un serveur cloud (ex: AWS, Heroku, Render)
-2. Mettre en place un fichier `requirements.txt` et un fichier `Procfile` (pour Heroku)
-3. Pousser le projet sur GitHub et le connecter au service cloud choisi
-
 
 
 
