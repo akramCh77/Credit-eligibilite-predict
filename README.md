@@ -89,7 +89,5 @@ curl -X POST http://127.0.0.1:5000/predict_api -H "Content-Type: application/jso
 3. Pousser le projet sur GitHub et le connecter au service cloud choisi
 
 
----
 
-N'hésite pas à modifier ce fichier pour ajouter des détails spécifiques à ton projet. 😊
 
